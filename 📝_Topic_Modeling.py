@@ -1,7 +1,6 @@
 from wordcloud import WordCloud
 import streamlit as st
 from streamlit import components
-import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import pickle

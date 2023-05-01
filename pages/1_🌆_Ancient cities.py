@@ -1,10 +1,7 @@
 import seaborn as sns
-import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import st_folium, folium_static
 import osmnx as ox
-import geopandas as gpd
-import pandas as pd
 import streamlit as st
 import pydeck as pdk
 st.set_page_config(layout='wide')
