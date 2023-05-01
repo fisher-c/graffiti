@@ -1,2 +1,2 @@
-# graffiti
-Using NLP techniques to explore ancient graffiti in Pompeii and Herculaneum
+# Ancient Roman Graffiti Topic Modeling
+Using NLP techniques to explore ancient graffiti in Pompeii and Herculaneum.
