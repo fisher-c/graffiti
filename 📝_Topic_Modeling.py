@@ -20,10 +20,11 @@ hide_menu_style = """
             min-width: 0px;
             max-width: 200px;
             }
-        #MainMenu {visibility: hidden;}
+        
         footer {visibility: hidden;}
         </style>
         """
+# MainMenu {visibility: hidden;}
 st.markdown(hide_menu_style, unsafe_allow_html=True)
 
 
@@ -79,7 +80,7 @@ for description in denselist:
     all_keywords.append(keywords)
 
 # kmeans clustering
-true_k = 8
+true_k = 9
 
 model = KMeans(n_clusters=true_k, init="k-means++",
                n_init=20, max_iter=1000,  random_state=42)
@@ -109,7 +110,7 @@ y_axis = [o[1] for o in scatter_plot_points]
 hover_text = ["Text: {}".format(txt) for txt in cleaned_docs]
 
 # create a trace for each cluster
-true_k = 8
+true_k = 9
 data = []
 for i in range(true_k):
     trace = go.Scatter(
@@ -157,21 +158,24 @@ Each point represents a vector in the input matrix, and the color of the point i
 
 Based on the word frequencies in each cluster, it's difficult to identify specific topics without more context about the data. However, here are some possible topic labels for each cluster:
 
-Cluster 0: Roman names (references to Lucius, Marcus, Quintus)
+Cluster 0 seems to represent names (e.g., Gaius, Proculus, Paris), food (e.g., bread), dates (e.g., December, Nones, Ides).
 
-Cluster 1: Trade, Economy, and Servitude (references to coins, slave, bread)
+Cluster 1 appears to be centered around personal names (e.g., Lucius, Marcus, Quintus, Paris) and positive expressions (e.g., greetings, good, love, happy, lucky). 
 
-Cluster 2: Messages, Greetings, and Informal Language (references to goodbye, text, written, greetings, gods)
+Cluster 2 includes farewells (e.g., bye, goodbye), personal names (e.g., Chloe, Paris, Valerius, Mus), and potentially some form of calendar notation (e.g., February).
 
-Cluster 3: Timekeeping (references to days, july, days kalends)
+Cluster 3 consists of farewells, personal names, and potential monetary references (e.g., denarius).
 
-Cluster 4: Language (references to letters, series, greek, january, ides, liberalis, time, felicio)
+Cluster 4 focuses on writing and language (e.g., series, letters, written, Greek). This might be parts of the annotations by the AGP authors that are left out from our final cleaning step.
 
-Cluster 5: Daily Interactions (references to bread, greetings, happily)
+Cluster 5 contains words associated with affection and personal relationships (e.g., farewell, love, loves), social status (e.g., man, slave), and personal names (e.g., Lucius, Mus).
 
-Cluster 6: Social Connections (references to love, greetings, goodbye, antonius, pompeians, live, mark)
+Cluster 6 appears to be associated with personal commentary or requests (e.g., man, good, ask, love), possibly crude language (e.g., phallus, fucked), and references to the divine (e.g., gods).
 
-Cluster 7: Farewells (references to bye, chloe, paris)
+Cluster 7 focuses on dates and time (e.g., days, Kalends, Ides, July, December), food (e.g., bread), and personal names (e.g., Marcus). 
+
+Cluster 8 seems to be centered on monetary transactions or value, dates, food, and personal names.
+
 """
 
 st.header("Topic Modelling--LDA (Latent Dirichlet Allocation)")
@@ -204,7 +208,7 @@ st.subheader("Word Clouds for LDA Topics")
 
 # Call the code to display word clouds for LDA topics
 top_words = []
-for i in range(8):
+for i in range(9):
     top_words.append([word[0] for word in lda_model.show_topic(i, topn=10)])
 
 col1, col2, col3 = st.columns(3)
@@ -277,5 +281,10 @@ with col8:
     ax.axis("off")
     st.pyplot(fig)
 with col9:
-    # empty
-    st.write("")
+    wordcloud = WordCloud(background_color="white", colormap='Set2').generate(
+        ' '.join(top_words[8]))
+    fig, ax = plt.subplots(figsize=(4, 4), facecolor=None)
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.set_title("Topic " + str(8))
+    ax.axis("off")
+    st.pyplot(fig)
