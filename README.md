@@ -15,8 +15,8 @@ Explore the app here: https://fisher-c-graffiti--topic-modeling-yrc7z0.streamlit
 
 The app employs NLP techniques to perform topic modeling on the graffiti text, revealing themes and patterns in the writings of ancient Romans. Users can explore the results of the topic modeling, including the most significant words and phrases associated with each topic, to gain a deeper understanding of the concerns and interests of the people who lived in Pompeii and Herculaneum.
 
-- ![topics screenshot](data/topics.png)
-- ![word cloud screenshot](data/word_cloud.png)
+![topics screenshot](data/topics.png)
+![word cloud screenshot](data/word_cloud.png)
 
 **2. Data Exploration:**
 The app allows users to scroll through and inspect the dataset at different stages of data preprocessing stages.
@@ -24,7 +24,7 @@ The app allows users to scroll through and inspect the dataset at different stag
 **3. Interactive Visualizations:**
 Most graphs are interactive--allowing users to zoom in and out and explore the specific contents of interest.
 
-- Hover over the dots in the PCA plot to see where each piece of graffiti falls based on the analysis, with translations displayed for each point:
+Hover over the dots in the PCA plot to see where each piece of graffiti falls based on the analysis, with translations displayed for each point:
 ![PCA Screenshot](data/streamlit_pca_screenshot.png)
 
 
