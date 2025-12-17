@@ -18,39 +18,67 @@ st.markdown(hide_menu_style, unsafe_allow_html=True)
 st.header("Data")
 
 st.subheader("Dataset")
-"""
+st.markdown(
+    """
 The dataset is downloaded from the Ancient Graffiti Project (AGP) website (http://ancientgraffiti.org/Graffiti/). AGP is a digital resource and search engine for locating and studying graffiti of the early Roman empire from the cities of Pompeii and Herculaneum. It was founded in 2012 by Rebecca Benefiel and Holly Sypniewski, both professors of classics at the University of Mississippi. The AGP website includes a searchable database of over 1,600 graffiti inscriptions from Pompeii and Herculaneum. These inscriptions are accompanied by translations, transcriptions, and photographs. The website also includes a map of the ancient cities, which allows users to see where the graffiti was found.
 
-The dataset used in this study consists of 2124 entries and 22 columns after flattening the nested JSON data and dropping a few columns related to contributors. The resulting columns of the dataset include 'content', 'apparatus', 'sourceFindSpot', 'contentTranslation', 'caption', 'writingStyleInEnglish', 'languageInEnglish', 'cil', 'citation', 'preciseLocation', 'italianPropertyName', 'numberOfGraffiti', 'propertyNumber', 'insula.shortName', 'insula.fullName', 'insula.city.name', 'insula.city.pleiadesId', 'englishPropertyName', 'additionalEntrances', 'propertyName', 'descriptionInEnglish', and 'descriptionInLatin'. 
+The dataset used in this study consists of 2124 entries and **22 columns** after flattening the nested JSON data and dropping a few columns related to contributors. The resulting columns of the dataset include `content`, `apparatus`, `sourceFindSpot`, `contentTranslation`, `caption`, `writingStyleInEnglish`, `languageInEnglish`, `cil`, `citation`, `preciseLocation`, `italianPropertyName`, `numberOfGraffiti`, `propertyNumber`, `insula.shortName`, `insula.fullName`, `insula.city.name`, `insula.city.pleiadesId`, `englishPropertyName`, `additionalEntrances`, `propertyName`, `descriptionInEnglish`, and `descriptionInLatin`.
 
-For the purposes of natural language processing and text analysis, we focused on three columns: content (original wall text with annotations), contentTranslation, and languageInEnglish (either Latin, Greek, or Latin/Greek). It is note-worthy that the dataset only has 1030 translated content, which is only 48.5% of the values. The missing values will be dealt with during data preprocessing. The dataset is shown in the table below.
+For the purposes of NLP and text analysis, we focused on three columns: `content` (original wall text with annotations), `contentTranslation`, and `languageInEnglish` (either Latin, Greek, or Latin/Greek). Notably, the dataset only has 1030 translated values (48.5%). Missing values are handled during data preprocessing. The dataset is shown in the table below.
 """
+)
 
 # read csv
 df = pd.read_csv('data/df.csv', encoding='utf-8')
 
-counts = df['insula.fullName'].value_counts()
-fig = px.bar(x=counts.index, y=counts.values, labels={'x': 'Insula', 'y': 'Count'},
-             color_discrete_sequence=['#9EE6CF'], opacity=0.9)
-fig.update_layout(title='Insula Distribution',
-                  xaxis_title='', yaxis_title='Count')
-st.plotly_chart(fig)
+COLOR_SCALE = ["#DDF7EF", "#1B7F6A"]  # light -> dark mint/teal
 
 
-counts = df['insula.city.name'].value_counts()
-fig = px.bar(x=counts.index, y=counts.values, labels={'x': 'City', 'y': 'Count'},
-             color_discrete_sequence=['#9EE6CF'], opacity=0.9)
-fig.update_layout(title='City Distribution',
-                  xaxis_title='', yaxis_title='Count')
-st.plotly_chart(fig)
+def bar_counts(series, *, x_label: str, title: str):
+    counts = series.value_counts().reset_index()
+    counts.columns = [x_label, "Count"]
+    fig = px.bar(
+        counts,
+        x=x_label,
+        y="Count",
+        color="Count",
+        color_continuous_scale=COLOR_SCALE,
+        labels={x_label: x_label, "Count": "Graffiti count"},
+        opacity=0.9,
+    )
+    fig.update_layout(title=title, xaxis_title="", yaxis_title="Graffiti count")
+    fig.update_layout(height=360)
+    fig.update_coloraxes(showscale=False)
+    return fig
 
 
-counts = df['languageInEnglish'].value_counts()
-fig = px.bar(x=counts.index, y=counts.values, labels={'x': 'Language', 'y': 'Count'},
-             color_discrete_sequence=['#9EE6CF'], opacity=0.9)
-fig.update_layout(title='Language Distribution',
-                  xaxis_title='', yaxis_title='Count')
-st.plotly_chart(fig)
+_pad_left, _center, _pad_right = st.columns([1, 6, 1])
+with _center:
+    fig = bar_counts(
+        df["insula.fullName"],
+        x_label="Insula",
+        title="Number of graffiti by insula (city block)",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+_pad_left, col1, col2, _pad_right = st.columns([1, 3, 3, 1])
+with col1:
+    fig = bar_counts(
+        df["insula.city.name"],
+        x_label="City",
+        title="Number of graffiti by city",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+with col2:
+    fig = bar_counts(
+        df["languageInEnglish"],
+        x_label="Language",
+        title="Number of graffiti by language",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 content_df = df[['content', 'contentTranslation', 'languageInEnglish']]
@@ -59,44 +87,42 @@ st.dataframe(content_df)
 
 
 st.subheader("Data Preprocessing")
+st.markdown(
+    """
+Raw inscriptions from the Ancient Graffiti Project include a lot of scholarly markup (brackets, symbols, editorial notes) based on their [epigraphic conventions](http://ancientgraffiti.org/about/main/epigraphic-conventions/). To make the text usable for translation and NLP, we cleaned and normalized these annotations while trying to preserve what was actually written on the wall.
+
+In short, we:
+
+1. Removed empty or clearly invalid rows.
+2. Decoded HTML entities and normalized casing/whitespace.
+3. Simplified common annotation patterns (e.g., turning `a(bc)` into `abc`) while preserving missing-text markers like `[---]`.
+4. Removed remaining special characters and formatting noise.
+5. Ran a small “text infilling” experiment for `[---]` gaps using language models (LatinBERT for Latin and GreekBERT for Greek). This step is inherently imperfect because many inscriptions are extremely short and fragmentary.
 """
-The quality of the data determines the quality of every downstream translation and natural language processing step; thus, it is crucial to meticulously clean the data. The raw texts contain numerous special characters and author explanations. The Ancient Graffiti Project's epigraphic conventions are detailed on their website (http://ancientgraffiti.org/about/main/epigraphic-conventions/). Unlike standard text preprocessing steps for regular English texts, our text preprocessing steps carefully considered the nature of our raw text and the AGP epigraphic conventions. To minimize the impact of these characters and annotations on the topic modeling tasks, we employed the following steps to clean the text:
-1. Drop rows with missing values
+)
 
-2. If a row contains "ABC", drop the row
+with st.expander("See detailed cleaning rules"):
+    st.markdown(
+        """
+These rules were implemented primarily with regular expressions (here `abc` stands for any letters):
 
-3. Decode the HTML entities into their corresponding characters
-
-4. If "(\:abc)" pattern is found, replace the previous word with the word inside the parentheses
-
-5. remove “?”
-
-6. Replace "((\:abc))" with "abc"
-
-7. Replace "a(bc)" with "abc"
-
-8. Replace "[abc]" and "[[abc]]" to "abc", and "[ab c]" to "ab c", but we leave "[---]" alone
-
-9. Convert texts to lowercase
-
-10. replace "+" with ""
-
-11. replace "\n" with ", " 
-
-12. remove 〈 〉and <> and everything in between 
-
-13. remove 〚〛 and everything in between
-
-14. Text infilling for "[---]" (LatinBERT for Latin and GreekBERT for Greek)
-
-15. Remove remaining special characters
-
-(Note: abc stands for any combination of alphabets)
-
-Steps 1 through 13 were completed using regular expressions. We choose to do text infilling to address the many missing texts in the original text data. After completing basic text preprocessing, we obtained relatively clean texts for text infilling. Since the raw text data are very short and contain a large number of missing characters or incomprehensive letters, most texts are incomprehensible as a result. We hope the text infilling experiment might bring more comprehensibility of the analysis tasks.
-
-For text infilling, we selected a language model to predict missing words. A language model is a statistical model that learns the contextual relationships between words and generates predictions for missing words. Specifically, we chose LatinBERT, developed by Bamman and Burns in 2020. LatinBERT is a fine-tuned version of the BERT model trained on 642.7 million words from a variety of sources spanning the Classical era to the 21st century. Since LatinBERT is trained on a large corpus of Latin text, it is a suitable tool for infilling Latin words. For each text document, if it contains [---], we replaced it with [MASK] and ran the LatinBERT unmasker function to predict the missing content. We chose the highest confidence word and updated the text with the new sequence predicted by the model. We observed that when [MASK] appeared as the last word in a sentence, it was almost always the case that the prediction would be a punctuation. Also, since our texts are very short and contain a lot of missing elements, it is challenging for the language model to accurately predict the missing content.
+1. Drop rows with missing values.
+2. If a row contains `ABC`, drop the row.
+3. Decode HTML entities into their corresponding characters.
+4. If the pattern `(:abc)` appears, replace the previous word with `abc`.
+5. Remove `?`.
+6. Replace `((:abc))` with `abc`.
+7. Replace `a(bc)` with `abc`.
+8. Replace `[abc]` and `[[abc]]` with `abc`, and normalize `[ab c]` → `ab c` (but keep `[---]` as-is).
+9. Convert text to lowercase.
+10. Remove `+`.
+11. Replace newlines (`\\n`) with `, `.
+12. Remove `〈 〉` and `< >` and everything in between.
+13. Remove `〚〛` and everything in between.
+14. Text infilling for `[---]` (LatinBERT for Latin and GreekBERT for Greek).
+15. Remove remaining special characters.
 """
+    )
 
 # read data
 latin_content = pd.read_csv('data/latin_content.csv', encoding='utf-8')
